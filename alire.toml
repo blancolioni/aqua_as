@@ -1,0 +1,14 @@
+name = "aqua_as"
+description = "Shiny new project"
+version = "0.1.0-dev"
+
+authors = ["Fraser Wilson"]
+maintainers = ["Fraser Wilson <fraser@thewhitelion.eu>"]
+maintainers-logins = ["blancolioni"]
+
+executables = ["aqua_as"]
+[[depends-on]]
+wl_lib = "~0.1.1-dev"
+
+[[depends-on]]
+parse_args = "~0.9.0"

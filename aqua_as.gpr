@@ -1,0 +1,24 @@
+with "config/aqua_as_config.gpr";
+
+project Aqua_As is
+
+   for Source_Dirs use ("src", "config");
+   for Object_Dir use "obj/" & Aqua_As_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("aqua_as.adb");
+
+   package Compiler is
+      for Default_Switches ("ada") use ("-Og", "-ffunction-sections", "-fdata-sections", "-g", "-gnatW8", "-gnata", "-gnato", "-fstack-check", "-gnatVa", "-gnatwa.X", "-gnatyaABbc-defhiIklM79nOprStux");
+   end Compiler;
+
+   package Binder is
+      for Switches ("ada") use ("-Es"); --  Symbolic traceback
+   end Binder;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+end Aqua_As;
+
