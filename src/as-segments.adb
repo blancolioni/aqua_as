@@ -32,6 +32,14 @@ package body As.Segments is
                             Allocate   => False,
                             Initialize => True);
 
+   Local_Note : aliased constant Instance :=
+                  Instance'(Name       => As.Names."+" (".note"),
+                            Read       => True,
+                            Write      => False,
+                            Execute    => False,
+                            Allocate   => False,
+                            Initialize => True);
+
    Local_Text : aliased constant Instance :=
                   Instance'(Name       => As.Names."+" (".text"),
                             Read       => True,
@@ -39,6 +47,24 @@ package body As.Segments is
                             Execute    => False,
                             Allocate   => True,
                             Initialize => True);
+
+   --------------
+   -- Add_Note --
+   --------------
+
+   procedure Add_Note
+     (This        : in out Segment_State'Class;
+      Name        : String;
+      Tag         : Word_32;
+      Description : String)
+   is
+   begin
+      This.Notes.Append
+        (Note_Record'
+           (Name => As.Names."+" (Name),
+            Tag  => Tag,
+            Desc => As.Names."+" (Description)));
+   end Add_Note;
 
    -----------------
    -- Add_Segment --
@@ -142,6 +168,24 @@ package body As.Segments is
       This.Reset;
    end Initialize;
 
+   -------------------
+   -- Iterate_Notes --
+   -------------------
+
+   procedure Iterate_Notes
+     (This    : Segment_State'Class;
+      Process : not null access
+        procedure (Name   : String;
+                   Tag    : Word_32;
+                   Description : String))
+   is
+   begin
+      for Note of This.Notes loop
+         Process (As.Names."-" (Note.Name), Note.Tag,
+                  As.Names."-" (Note.Desc));
+      end loop;
+   end Iterate_Notes;
+
    ----------------------
    -- Iterate_Segments --
    ----------------------
@@ -156,6 +200,15 @@ package body As.Segments is
          Process (Element);
       end loop;
    end Iterate_Segments;
+
+   ------------------
+   -- Note_Segment --
+   ------------------
+
+   function Note_Segment return Reference is
+   begin
+      return Local_Note'Access;
+   end Note_Segment;
 
    -----------
    -- Reset --

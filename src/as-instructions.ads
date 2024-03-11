@@ -36,6 +36,7 @@ private package As.Instructions is
    function Segment (Name : String) return Reference;
    function Export return Reference;
    function Extern return Reference;
+   function Note return Reference;
 
    type Expression_Reference is access constant As.Expressions.Instance'Class;
 
@@ -57,7 +58,8 @@ private
 
    type Special_Instruction is (Get, Put, Resume, Set);
 
-   type Directive_Instruction is (Set_Segment, Export_Symbol, Extern_Symbol);
+   type Directive_Instruction is
+     (Set_Segment, Export_Symbol, Extern_Symbol, Add_Note);
 
    type Instance is tagged
       record
@@ -106,6 +108,11 @@ private
    is (new Instance'(Is_Directive => True,
                      Directive    => Set_Segment,
                      Segment_Name => As.Names."+" (Name),
+                     others       => <>));
+
+   function Note return Reference
+   is (new Instance'(Is_Directive => True,
+                     Directive    => Add_Note,
                      others       => <>));
 
    function Export return Reference

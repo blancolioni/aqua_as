@@ -64,6 +64,8 @@ package body As.Instructions is
          end loop;
       elsif This.Is_Directive then
          case This.Directive is
+            when Add_Note =>
+               null;
             when Export_Symbol =>
                null;
             when Extern_Symbol =>
@@ -273,6 +275,21 @@ package body As.Instructions is
                            * Word_32 (Arguments'Length));
       elsif This.Is_Directive then
          case This.Directive is
+            when Add_Note =>
+               declare
+                  Desc : String (1 .. Arguments'Length - 2);
+               begin
+                  for I in Desc'Range loop
+                     Desc (I) :=
+                       Character'Val (Arguments (I + 2).Get_Word_Value (Env));
+                  end loop;
+
+                  As.Segments.Add_Note
+                    (Env.all,
+                     Arguments (1).To_String,
+                     Arguments (2).Get_Word_Value (Env),
+                     Desc);
+               end;
             when Export_Symbol =>
                for Arg of Arguments loop
                   Env.Export (Arg.To_String);

@@ -214,6 +214,7 @@ package body As.Objects is
    procedure Write (This : in out Instance'Class; Path : String) is
       use WL.Files.ELF;
       File : File_Type;
+      Note_Data : Word_8_Vectors.Vector;
 
       procedure Add_Global_Symbol
         (Name     : String;
@@ -228,6 +229,11 @@ package body As.Objects is
          Defined  : Boolean;
          Exported : Boolean;
          Value    : Word_32);
+
+      procedure Add_Note
+        (Name : String;
+         Tag  : Word_32;
+         Desc : String);
 
       procedure Add_Symbol_Reference
         (Name    : String;
@@ -288,6 +294,59 @@ package body As.Objects is
          end if;
       end Add_Local_Symbol;
 
+      --------------
+      -- Add_Note --
+      --------------
+
+      procedure Add_Note
+        (Name : String;
+         Tag  : Word_32;
+         Desc : String)
+      is
+         procedure Put_String (S : String);
+         procedure Put_Word_32 (W : Word_32);
+
+         -----------------
+         -- Put_Word_32 --
+         -----------------
+
+         procedure Put_Word_32 (W : Word_32) is
+            Octets : array (1 .. 4) of Word_8;
+            It     : Word_32 := W;
+         begin
+            for I in reverse Octets'Range loop
+               Octets (I) := Word_8 (It mod 256);
+               It := It / 256;
+            end loop;
+            for Octet of Octets loop
+               Note_Data.Append (Octet);
+            end loop;
+         end Put_Word_32;
+
+         ----------------
+         -- Put_String --
+         ----------------
+
+         procedure Put_String (S : String) is
+         begin
+            for Ch of S loop
+               Note_Data.Append (Character'Pos (Ch));
+            end loop;
+            if S'Length mod 4 /= 0 then
+               for I in 1 .. 4 - S'Length mod 4 loop
+                  Note_Data.Append (0);
+               end loop;
+            end if;
+         end Put_String;
+
+      begin
+         Put_Word_32 (Word_32 (Name'Length));
+         Put_Word_32 (Word_32 (Desc'Length));
+         Put_Word_32 (Tag);
+         Put_String (Name);
+         Put_String (Desc);
+      end Add_Note;
+
       --------------------------
       -- Add_Symbol_Reference --
       --------------------------
@@ -305,6 +364,15 @@ package body As.Objects is
       end Add_Symbol_Reference;
 
    begin
+
+      This.Env.Iterate_Notes (Add_Note'Access);
+
+      for Segment of This.Segment_List loop
+         if Segment.Segment.Name = ".note" then
+            Segment.Data := Note_Data;
+         end if;
+      end loop;
+
       Create (File, Out_File, Path);
 
       for Segment of This.Segment_List loop
@@ -312,7 +380,9 @@ package body As.Objects is
            (File        => File,
             Name        => Segment.Segment.Name,
             Header_Type =>
-              (if Segment.Segment.Initialize
+              (if Segment.Segment.Name = ".note"
+               then WL.Files.ELF.Note
+               elsif Segment.Segment.Initialize
                then WL.Files.ELF.Progbits
                else WL.Files.ELF.Nobits),
             Write       => Segment.Segment.Write,

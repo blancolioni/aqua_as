@@ -26,6 +26,7 @@ package As.Segments is
    function Data_Segment return Reference;
    function Heap_Segment return Reference;
    function Info_Segment return Reference;
+   function Note_Segment return Reference;
    function Text_Segment return Reference;
 
    type Segment_Location is private;
@@ -72,12 +73,35 @@ package As.Segments is
    procedure Initialize (This : in out Segment_State;
                          From : not null access constant Segment_State'Class);
 
+   procedure Add_Note
+     (This        : in out Segment_State'Class;
+      Name        : String;
+      Tag         : Word_32;
+      Description : String);
+
    procedure Iterate_Segments
      (This : Segment_State'Class;
       Process : not null access
         procedure (Segment : Reference));
 
+   procedure Iterate_Notes
+     (This    : Segment_State'Class;
+      Process : not null access
+        procedure (Name   : String;
+                   Tag    : Word_32;
+                   Description : String));
+
 private
+
+   type Note_Record is
+      record
+         Name : As.Names.Symbol_Name;
+         Tag  : Word_32;
+         Desc : As.Names.Symbol_Name;
+      end record;
+
+   package Note_Lists is
+     new Ada.Containers.Doubly_Linked_Lists (Note_Record);
 
    subtype Dispatch is Instance'Class;
 
@@ -132,6 +156,7 @@ private
          Map     : Segment_Maps.Map;
          List    : Segment_Lists.List;
          Current : Segment_Maps.Cursor;
+         Notes   : Note_Lists.List;
       end record;
 
    function Location

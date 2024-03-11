@@ -186,6 +186,7 @@ package body As.Environment is
       Instr ("code", As.Instructions.Segment (".code"));
       Instr ("data", As.Instructions.Segment (".data"));
       Instr ("text", As.Instructions.Segment (".text"));
+      Instr ("note", As.Instructions.Note);
 
       Instr ("export", As.Instructions.Export);
       Instr ("extern", As.Instructions.Extern);
@@ -197,6 +198,7 @@ package body As.Environment is
       Env.Add_Segment (As.Segments.Data_Segment);
       Env.Add_Segment (As.Segments.Heap_Segment);
       Env.Add_Segment (As.Segments.Info_Segment);
+      Env.Add_Segment (As.Segments.Note_Segment);
 
       Env.Set_Current (".code");
 
