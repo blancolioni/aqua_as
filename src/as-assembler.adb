@@ -1,3 +1,4 @@
+with Ada.Directories;
 with Ada.Exceptions;
 with Ada.Text_IO;
 
@@ -5,8 +6,8 @@ with As.Expressions;
 with As.Files;
 with As.Images;
 with As.Instructions;
+with As.Options;
 with As.Parser;
-with As.Paths;
 with As.Segments;
 
 package body As.Assembler is
@@ -20,6 +21,10 @@ package body As.Assembler is
      (This : Instance'Class)
       return Boolean
    is (This.Errors);
+
+   function Configuration_Path
+     (File_Name : String)
+      return String;
 
    --------------
    -- Assemble --
@@ -219,6 +224,30 @@ package body As.Assembler is
 
    end Assemble;
 
+   ------------------------
+   -- Configuration_Path --
+   ------------------------
+
+   function Configuration_Path
+     (File_Name : String)
+      return String
+   is
+      use Ada.Directories;
+      Config_Path : constant String :=
+                      Compose (As.Options.Config_Path, File_Name);
+      Default_Path : constant String :=
+                       Compose ("./share/aqua_as", File_Name);
+   begin
+      if Exists (Config_Path) then
+         return Config_Path;
+      elsif Exists (Default_Path) then
+         return Default_Path;
+      else
+         raise Constraint_Error with
+           "cannot find configuration file '" & File_Name & "'";
+      end if;
+   end Configuration_Path;
+
    -----------
    -- Error --
    -----------
@@ -387,9 +416,9 @@ package body As.Assembler is
           (Env => As.Environment.Create,
            others => <>)
       do
-         This.Load (As.Paths.Config_File ("const.s"));
+         This.Load (Configuration_Path ("const.s"));
          if Is_Main_Program then
-            This.Load (As.Paths.Config_File ("artl.s"));
+            This.Load (Configuration_Path ("artl.s"));
          end if;
       end return;
    end New_Assembler;

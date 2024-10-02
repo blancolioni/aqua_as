@@ -381,10 +381,10 @@ package body As.Objects is
             Name        => Segment.Segment.Name,
             Header_Type =>
               (if Segment.Segment.Name = ".note"
-               then WL.Files.ELF.Note
+               then WL.Files.ELF.Sht_Note
                elsif Segment.Segment.Initialize
-               then WL.Files.ELF.Progbits
-               else WL.Files.ELF.Nobits),
+               then WL.Files.ELF.Sht_Progbits
+               else WL.Files.ELF.Sht_Nobits),
             Write       => Segment.Segment.Write,
             Execinstr   => Segment.Segment.Execute,
             Alloc       => Segment.Segment.Allocate);

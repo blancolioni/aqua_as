@@ -14,6 +14,19 @@ package body As.Options is
 
    Source_File_Vector : String_Vectors.Vector;
 
+   -----------------
+   -- Config_Path --
+   -----------------
+
+   function Config_Path return String is
+   begin
+      return AP.String_Value ("config path");
+   end Config_Path;
+
+   ----------
+   -- Load --
+   ----------
+
    function Load return Boolean is
    begin
 
@@ -21,6 +34,11 @@ package body As.Options is
         (Make_String_Option ("a.out"),
          "object file name", 'o', "object-name",
          "Write output to the given path (default: a.out)");
+
+      AP.Add_Option
+        (Make_String_Option (""),
+         "config path", '-', "config-path",
+         "Override standard configuration path");
 
       AP.Add_Option
         (Make_Boolean_Option (False),
