@@ -1,5 +1,6 @@
 rB = 0
 rD = 1
+rE = 23
 rJ = 4
 rR = 6
 rBB = 7
