@@ -1,18 +1,28 @@
+with Ada.Command_Line;
+with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Containers.Indefinite_Vectors;
+with Ada.Strings.Fixed;
 with Ada.Text_IO;
-
-with Parse_Args;
 
 package body As.Options is
 
-   use Parse_Args;
+   package String_Maps is
+     new Ada.Containers.Indefinite_Ordered_Maps (String, String);
 
-   AP : Argument_Parser;
+   package Boolean_Maps is
+     new Ada.Containers.Indefinite_Ordered_Maps (String, Boolean);
 
    package String_Vectors is
      new Ada.Containers.Indefinite_Vectors (Positive, String);
 
+   Str_Values         : String_Maps.Map;
+   Bool_Values        : Boolean_Maps.Map;
    Source_File_Vector : String_Vectors.Vector;
+
+   Object_Name_Option   : constant String := "object file name";
+   Config_Path_Option   : constant String := "config path";
+   Write_Listing_Option : constant String := "write listing";
+   Main_Program_Option  : constant String := "main program";
 
    -----------------
    -- Config_Path --
@@ -20,7 +30,7 @@ package body As.Options is
 
    function Config_Path return String is
    begin
-      return AP.String_Value ("config path");
+      return Str_Values (Config_Path_Option);
    end Config_Path;
 
    ----------
@@ -28,41 +38,108 @@ package body As.Options is
    ----------
 
    function Load return Boolean is
-   begin
+      use Ada.Command_Line;
+      use Ada.Strings.Fixed;
 
-      AP.Add_Option
-        (Make_String_Option ("a.out"),
-         "object file name", 'o', "object-name",
-         "Write output to the given path (default: a.out)");
+      Arg_Index : Natural := 1;
 
-      AP.Add_Option
-        (Make_String_Option (""),
-         "config path", '-', "config-path",
-         "Override standard configuration path");
+      function Fail (Message : String) return Boolean;
 
-      AP.Add_Option
-        (Make_Boolean_Option (False),
-         "write listing", 'l', "write-listing",
-         "Write a listing file");
+      ----------
+      -- Fail --
+      ----------
 
-      AP.Add_Option
-        (Make_Boolean_Option (False),
-         "main program", 'm', "main",
-         "Compile to an object file suitable for running as a main program");
-
-      AP.Allow_Tail_Arguments ("assembly source files ...");
-
-      AP.Parse_Command_Line;
-
-      if not AP.Parse_Success then
-         Ada.Text_IO.Put_Line
-           (Ada.Text_IO.Standard_Error,
-            AP.Parse_Message);
+      function Fail (Message : String) return Boolean is
+      begin
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Message);
          return False;
-      end if;
+      end Fail;
 
-      for File_Name of AP.Tail loop
-         Source_File_Vector.Append (File_Name);
+   begin
+      --  Defaults.
+      Str_Values.Insert (Object_Name_Option, "a.out");
+      Str_Values.Insert (Config_Path_Option, "");
+      Bool_Values.Insert (Write_Listing_Option, False);
+      Bool_Values.Insert (Main_Program_Option, False);
+
+      while Arg_Index <= Argument_Count loop
+         declare
+            Arg : constant String := Argument (Arg_Index);
+
+            function Take_Value (Inline : String; Has_Inline : Boolean)
+                                 return String;
+
+            ----------------
+            -- Take_Value --
+            ----------------
+
+            function Take_Value (Inline : String; Has_Inline : Boolean)
+                                 return String is
+            begin
+               if Has_Inline then
+                  return Inline;
+               else
+                  Arg_Index := Arg_Index + 1;
+                  return Argument (Arg_Index);
+               end if;
+            end Take_Value;
+
+         begin
+            if Arg'Length >= 2
+              and then Arg (Arg'First .. Arg'First + 1) = "--"
+            then
+
+               --  Long option, optionally --name=value.
+
+               declare
+                  Text : constant String := Arg (Arg'First + 2 .. Arg'Last);
+                  Eq   : constant Natural := Index (Text, "=");
+                  Name : constant String :=
+                           (if Eq = 0 then Text
+                            else Text (Text'First .. Eq - 1));
+                  Val  : constant String :=
+                           (if Eq = 0 then "" else Text (Eq + 1 .. Text'Last));
+                  Has_Val : constant Boolean := Eq /= 0;
+               begin
+                  if Name = "object-name" then
+                     if not Has_Val and then Arg_Index = Argument_Count then
+                        return Fail ("option --object-name requires a value");
+                     end if;
+                     Str_Values.Replace
+                       (Object_Name_Option, Take_Value (Val, Has_Val));
+                  elsif Name = "config-path" then
+                     if not Has_Val and then Arg_Index = Argument_Count then
+                        return Fail ("option --config-path requires a value");
+                     end if;
+                     Str_Values.Replace
+                       (Config_Path_Option, Take_Value (Val, Has_Val));
+                  elsif Name = "write-listing" then
+                     Bool_Values.Replace (Write_Listing_Option, True);
+                  elsif Name = "main" then
+                     Bool_Values.Replace (Main_Program_Option, True);
+                  else
+                     return Fail ("unknown option: --" & Name);
+                  end if;
+               end;
+
+            elsif Arg = "-o" then
+               if Arg_Index = Argument_Count then
+                  return Fail ("option -o requires a value");
+               end if;
+               Str_Values.Replace (Object_Name_Option, Take_Value ("", False));
+            elsif Arg = "-l" then
+               Bool_Values.Replace (Write_Listing_Option, True);
+            elsif Arg = "-m" then
+               Bool_Values.Replace (Main_Program_Option, True);
+            elsif Arg'Length >= 1 and then Arg (Arg'First) = '-'
+              and then Arg /= "-"
+            then
+               return Fail ("unknown option: " & Arg);
+            else
+               Source_File_Vector.Append (Arg);
+            end if;
+         end;
+         Arg_Index := Arg_Index + 1;
       end loop;
 
       return True;
@@ -75,7 +152,7 @@ package body As.Options is
 
    function Main_Program return Boolean is
    begin
-      return AP.Boolean_Value ("main program");
+      return Bool_Values (Main_Program_Option);
    end Main_Program;
 
    ----------------------
@@ -84,7 +161,7 @@ package body As.Options is
 
    function Output_File_Name return String is
    begin
-      return AP.String_Value ("object file name");
+      return Str_Values (Object_Name_Option);
    end Output_File_Name;
 
    -----------------
@@ -111,7 +188,7 @@ package body As.Options is
 
    function Write_Listing return Boolean is
    begin
-      return AP.Boolean_Value ("write listing");
+      return Bool_Values (Write_Listing_Option);
    end Write_Listing;
 
 end As.Options;
