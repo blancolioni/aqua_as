@@ -57,6 +57,10 @@ package body As.Environment is
          Base_Op : Word_8;
          Y_Imm   : Boolean := False);
 
+      procedure Float_3 (Name : String; Base_Op : Word_8);
+      procedure Float_2 (Name : String; Base_Op : Word_8);
+      procedure Float_Cvt (Name : String; Base_Op : Word_8);
+
       ------------
       -- Branch --
       ------------
@@ -105,6 +109,33 @@ package body As.Environment is
       begin
          Instr (Name, As.Instructions.I_Z_Imm (Base_Op, Y_Imm));
       end Z_Imm;
+
+      -------------
+      -- Float_3 --
+      -------------
+
+      procedure Float_3 (Name : String; Base_Op : Word_8) is
+      begin
+         Instr (Name, As.Instructions.I_Float_3 (Base_Op));
+      end Float_3;
+
+      -------------
+      -- Float_2 --
+      -------------
+
+      procedure Float_2 (Name : String; Base_Op : Word_8) is
+      begin
+         Instr (Name, As.Instructions.I_Float_2 (Base_Op));
+      end Float_2;
+
+      ---------------
+      -- Float_Cvt --
+      ---------------
+
+      procedure Float_Cvt (Name : String; Base_Op : Word_8) is
+      begin
+         Instr (Name, As.Instructions.I_Float_Cvt (Base_Op));
+      end Float_Cvt;
 
    begin
       Z_Imm ("mul", 16#18#);
@@ -165,6 +196,20 @@ package body As.Environment is
 
       Branch ("pushj", 16#F2#);
       Branch ("geta", 16#F4#);
+
+      Float_3 ("fcmp", 16#01#);
+      Float_3 ("feql", 16#03#);
+      Float_3 ("fadd", 16#04#);
+      Float_3 ("fsub", 16#06#);
+      Float_3 ("fmul", 16#10#);
+      Float_3 ("fdiv", 16#14#);
+      Float_3 ("frem", 16#16#);
+
+      Float_2 ("fsqrt", 16#15#);
+      Float_2 ("fint", 16#17#);
+
+      Float_Cvt ("flot", 16#08#);
+      Float_Cvt ("flotu", 16#0A#);
 
       Instr ("get", As.Instructions.I_Get);
 

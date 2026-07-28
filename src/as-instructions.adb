@@ -113,6 +113,31 @@ package body As.Instructions is
                  Word_8 (YZ / 256 mod 256),
                  Word_8 (YZ mod 256));
          end;
+      elsif This.Is_Float then
+         declare
+            X : constant Word_8 := Word_8 (Op1.Get_Register_Value (Env));
+         begin
+            if not This.Float_Two then
+               --  X, Y, Z all registers.
+               Asm (This.Base_Op, X,
+                    Word_8 (Op2.Get_Register_Value (Env)),
+                    Word_8 (Op3.Get_Register_Value (Env)));
+            elsif This.Z_Imm_Option
+              and then not Op2.Has_Register_Value (Env)
+            then
+               --  Convert from an immediate source (flot #k / flotu #k).
+               if Op2.Get_Word_Value (Env) > 255 then
+                  raise Instruction_Error with
+                    "immediate source must be <= 255";
+               end if;
+               Asm (This.Base_Op + 1, X, 0,
+                    Word_8 (Op2.Get_Word_Value (Env)));
+            else
+               --  X, Z registers; Y unused.
+               Asm (This.Base_Op, X, 0,
+                    Word_8 (Op2.Get_Register_Value (Env)));
+            end if;
+         end;
       elsif This.Z_Imm_Option then
          if Immediate_Z
            and then Op3.Get_Word_Value (Env) > 255
