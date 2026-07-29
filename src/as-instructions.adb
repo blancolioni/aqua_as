@@ -17,6 +17,10 @@ package body As.Instructions is
    is
       procedure Asm (Op, X, Y, Z : Word_8);
 
+      procedure Check_Pair (Position : String; R : Word_8);
+      --  A floating point pair operand names (R, R + 1), so %255 has no
+      --  successor -- reject it rather than let the low word wrap to %0.
+
       function Op1 return Expression_Reference
       is (Arguments (Arguments'First));
 
@@ -42,6 +46,19 @@ package body As.Instructions is
          Target.Append (Y);
          Target.Append (Z);
       end Asm;
+
+      ----------------
+      -- Check_Pair --
+      ----------------
+
+      procedure Check_Pair (Position : String; R : Word_8) is
+      begin
+         if R = Word_8'Last then
+            raise Instruction_Error with
+              Position & " operand cannot be %255: a floating point pair"
+              & " occupies R and R + 1";
+         end if;
+      end Check_Pair;
 
    begin
       if This.Is_Data then
@@ -117,11 +134,26 @@ package body As.Instructions is
          declare
             X : constant Word_8 := Word_8 (Op1.Get_Register_Value (Env));
          begin
+            if This.Pair_X then
+               Check_Pair ("X", X);
+            end if;
+
             if not This.Float_Two then
                --  X, Y, Z all registers.
-               Asm (This.Base_Op, X,
-                    Word_8 (Op2.Get_Register_Value (Env)),
-                    Word_8 (Op3.Get_Register_Value (Env)));
+               declare
+                  Y : constant Word_8 :=
+                        Word_8 (Op2.Get_Register_Value (Env));
+                  Z : constant Word_8 :=
+                        Word_8 (Op3.Get_Register_Value (Env));
+               begin
+                  if This.Pair_Y then
+                     Check_Pair ("Y", Y);
+                  end if;
+                  if This.Pair_Z then
+                     Check_Pair ("Z", Z);
+                  end if;
+                  Asm (This.Base_Op, X, Y, Z);
+               end;
             elsif This.Z_Imm_Option
               and then not Op2.Has_Register_Value (Env)
             then
@@ -134,8 +166,15 @@ package body As.Instructions is
                     Word_8 (Op2.Get_Word_Value (Env)));
             else
                --  X, Z registers; Y unused.
-               Asm (This.Base_Op, X, 0,
-                    Word_8 (Op2.Get_Register_Value (Env)));
+               declare
+                  Z : constant Word_8 :=
+                        Word_8 (Op2.Get_Register_Value (Env));
+               begin
+                  if This.Pair_Z then
+                     Check_Pair ("Z", Z);
+                  end if;
+                  Asm (This.Base_Op, X, 0, Z);
+               end;
             end if;
          end;
       elsif This.Z_Imm_Option then

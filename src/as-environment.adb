@@ -57,8 +57,14 @@ package body As.Environment is
          Base_Op : Word_8;
          Y_Imm   : Boolean := False);
 
-      procedure Float_3 (Name : String; Base_Op : Word_8);
-      procedure Float_2 (Name : String; Base_Op : Word_8);
+      --  Pair_X is False when X is an integer rather than a register pair
+      --  (the compares fcmp/feql, the extractors fix/fixu).
+      procedure Float_3 (Name    : String;
+                         Base_Op : Word_8;
+                         Pair_X  : Boolean := True);
+      procedure Float_2 (Name    : String;
+                         Base_Op : Word_8;
+                         Pair_X  : Boolean := True);
       procedure Float_Cvt (Name : String; Base_Op : Word_8);
 
       ------------
@@ -114,18 +120,24 @@ package body As.Environment is
       -- Float_3 --
       -------------
 
-      procedure Float_3 (Name : String; Base_Op : Word_8) is
+      procedure Float_3 (Name    : String;
+                         Base_Op : Word_8;
+                         Pair_X  : Boolean := True)
+      is
       begin
-         Instr (Name, As.Instructions.I_Float_3 (Base_Op));
+         Instr (Name, As.Instructions.I_Float_3 (Base_Op, Pair_X));
       end Float_3;
 
       -------------
       -- Float_2 --
       -------------
 
-      procedure Float_2 (Name : String; Base_Op : Word_8) is
+      procedure Float_2 (Name    : String;
+                         Base_Op : Word_8;
+                         Pair_X  : Boolean := True)
+      is
       begin
-         Instr (Name, As.Instructions.I_Float_2 (Base_Op));
+         Instr (Name, As.Instructions.I_Float_2 (Base_Op, Pair_X));
       end Float_2;
 
       ---------------
@@ -197,8 +209,8 @@ package body As.Environment is
       Branch ("pushj", 16#F2#);
       Branch ("geta", 16#F4#);
 
-      Float_3 ("fcmp", 16#01#);
-      Float_3 ("feql", 16#03#);
+      Float_3 ("fcmp", 16#01#, Pair_X => False);
+      Float_3 ("feql", 16#03#, Pair_X => False);
       Float_3 ("fadd", 16#04#);
       Float_3 ("fsub", 16#06#);
       Float_3 ("fmul", 16#10#);
@@ -207,8 +219,8 @@ package body As.Environment is
 
       Float_2 ("fsqrt", 16#15#);
       Float_2 ("fint", 16#17#);
-      Float_2 ("fix", 16#05#);
-      Float_2 ("fixu", 16#07#);
+      Float_2 ("fix", 16#05#, Pair_X => False);
+      Float_2 ("fixu", 16#07#, Pair_X => False);
 
       Float_Cvt ("flot", 16#08#);
       Float_Cvt ("flotu", 16#0A#);

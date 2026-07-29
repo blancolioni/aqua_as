@@ -33,13 +33,24 @@ private package As.Instructions is
    function I_Branch (Base_Op : Word_8) return Reference;
 
    --  Floating-point forms.  The assembler only lays out register indices
-   --  and immediates; the register-pair / IEEE semantics live in the VM.
-   function I_Float_3 (Base_Op : Word_8) return Reference;
+   --  and immediates; the IEEE semantics live in the VM.  A pair operand
+   --  names the register pair (R, R + 1) for any R -- there is no
+   --  even-alignment rule -- so the one thing the assembler does check is
+   --  that a pair operand is not %255, which has no successor.
+   function I_Float_3 (Base_Op : Word_8;
+                       Pair_X  : Boolean := True)
+                       return Reference;
    --  X, Y, Z all registers (fadd, fsub, fmul, fdiv, frem, fcmp, feql).
-   function I_Float_2 (Base_Op : Word_8) return Reference;
-   --  X, Z registers, Y = 0 (fsqrt, fint).
+   --  Y and Z are always pairs; Pair_X is False for the compares, whose
+   --  X is an integer result.
+   function I_Float_2 (Base_Op : Word_8;
+                       Pair_X  : Boolean := True)
+                       return Reference;
+   --  X, Z registers, Y = 0 (fsqrt, fint, fix, fixu).  Z is always a pair;
+   --  Pair_X is False for the extractors fix and fixu.
    function I_Float_Cvt (Base_Op : Word_8) return Reference;
-   --  X register, Z register or immediate; imm uses Base_Op + 1 (flot, flotu).
+   --  X register pair, Z integer register or immediate; imm uses
+   --  Base_Op + 1 (flot, flotu).
 
    function Data (Element_Size : Positive) return Reference;
    function Segment (Name : String) return Reference;
@@ -83,6 +94,9 @@ private
          Is_Branch     : Boolean := False;
          Is_Float      : Boolean := False;
          Float_Two     : Boolean := False;
+         Pair_X        : Boolean := False;
+         Pair_Y        : Boolean := False;
+         Pair_Z        : Boolean := False;
          Has_Rel_Addr  : Boolean := False;
          Is_Pop        : Boolean := False;
          Data_Size     : Positive := 4;
@@ -111,16 +125,24 @@ private
    is (new Instance'(Base_Op, Is_Branch => True,
                      Mention => Relative_XY, others => <>));
 
-   function I_Float_3 (Base_Op : Word_8) return Reference
-   is (new Instance'(Base_Op, Is_Float => True, others => <>));
+   function I_Float_3 (Base_Op : Word_8;
+                       Pair_X  : Boolean := True)
+                       return Reference
+   is (new Instance'(Base_Op, Is_Float => True,
+                     Pair_X => Pair_X, Pair_Y => True, Pair_Z => True,
+                     others => <>));
 
-   function I_Float_2 (Base_Op : Word_8) return Reference
+   function I_Float_2 (Base_Op : Word_8;
+                       Pair_X  : Boolean := True)
+                       return Reference
    is (new Instance'(Base_Op, Is_Float => True, Float_Two => True,
+                     Pair_X => Pair_X, Pair_Z => True,
                      others => <>));
 
    function I_Float_Cvt (Base_Op : Word_8) return Reference
    is (new Instance'(Base_Op, Is_Float => True, Float_Two => True,
-                     Z_Imm_Option => True, others => <>));
+                     Z_Imm_Option => True, Pair_X => True,
+                     others => <>));
 
    function Data (Element_Size : Positive) return Reference
    is (new Instance'(Is_Data => True, Data_Size => Element_Size,
