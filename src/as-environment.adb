@@ -207,6 +207,8 @@ package body As.Environment is
 
       Float_2 ("fsqrt", 16#15#);
       Float_2 ("fint", 16#17#);
+      Float_2 ("fix", 16#05#);
+      Float_2 ("fixu", 16#07#);
 
       Float_Cvt ("flot", 16#08#);
       Float_Cvt ("flotu", 16#0A#);
